@@ -16,6 +16,8 @@ import { verifyAccessToken } from "./modules/identity/token.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { eventRouter } from "./modules/events/event.routes.js";
 import { detectionRouter } from "./modules/detection/detection.routes.js";
+import { incidentRouter } from "./modules/incidents/incident.routes.js";
+import { Incident } from "./modules/incidents/models/Incident.js";
 import { DetectionFinding } from "./modules/detection/models/DetectionFinding.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { AuditHead } from "./modules/audit/models/AuditHead.js";
@@ -54,6 +56,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/audit", auditRouter);
 app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/detections", detectionRouter);
+app.use("/api/v1/incidents", incidentRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
 app.use((error: unknown, request: express.Request, response: express.Response, _next: express.NextFunction) => {
@@ -175,6 +178,7 @@ async function start(): Promise<void> {
     AuditLog.createIndexes(),
     SecurityEvent.createIndexes(),
     DetectionFinding.createIndexes(),
+    Incident.createIndexes(),
   ]);
   httpServer.listen(env.API_PORT, env.API_HOST, () => {
     console.info(`SOC API listening on ${env.API_HOST}:${env.API_PORT}`);
