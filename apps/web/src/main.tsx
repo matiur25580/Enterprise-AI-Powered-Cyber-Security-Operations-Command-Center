@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import ReactDOM from "react-dom/client";
 
 import "./styles.css";
@@ -66,7 +66,7 @@ function App() {
     return () => { active = false; window.clearInterval(interval); };
   }, [accessToken, loadOverview]);
 
-  async function signIn(event: React.FormEvent<HTMLFormElement>) {
+  async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError("");
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
