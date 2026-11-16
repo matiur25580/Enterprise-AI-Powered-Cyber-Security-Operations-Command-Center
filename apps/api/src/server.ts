@@ -1,25 +1,18 @@
-import "dotenv/config";
-
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { createServer } from "node:http";
 import { Server as SocketServer } from "socket.io";
-import { z } from "zod";
 
-const environmentSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  API_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
-  WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
-});
+import { connectDatabase, disconnectDatabase, isDatabaseReady } from "./config/database.js";
+import { env } from "./config/env.js";
 
-const environment = environmentSchema.parse(process.env);
 const app = express();
 const httpServer = createServer(app);
 
 app.disable("x-powered-by");
 app.use(helmet());
-app.use(cors({ origin: environment.WEB_ORIGIN, credentials: true }));
+app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "256kb" }));
 
 app.get("/api/v1/health/live", (_request, response) => {
@@ -30,32 +23,53 @@ app.get("/api/v1/health/live", (_request, response) => {
 });
 
 app.get("/api/v1/health/ready", (_request, response) => {
-  // Dependency readiness checks will be added when MongoDB/Redis connections are wired.
-  response.status(503).json({
-    data: { status: "not_ready", dependencies: { database: "not_configured" } },
+  const ready = isDatabaseReady();
+  response.status(ready ? 200 : 503).json({
+    data: {
+      status: ready ? "ready" : "not_ready",
+      dependencies: { database: ready ? "connected" : "disconnected" },
+    },
     meta: { timestamp: new Date().toISOString() },
   });
 });
 
 const io = new SocketServer(httpServer, {
-  cors: { origin: environment.WEB_ORIGIN, credentials: true },
+  cors: { origin: env.WEB_ORIGIN, credentials: true },
 });
 
-// Authentication and tenant-room authorization must be added before exposing
-// any application event subscriptions. No tenant rooms are joined at this stage.
+// Until token verification and tenant room authorization are implemented,
+// reject all socket sessions rather than expose unauthenticated realtime data.
 io.on("connection", (socket) => {
   socket.disconnect(true);
 });
 
-httpServer.listen(environment.API_PORT, () => {
-  console.info(`SOC API listening on port ${environment.API_PORT}`);
-});
+let shuttingDown = false;
 
-const shutdown = (signal: string) => {
+async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
   console.info(`Received ${signal}; shutting down gracefully.`);
-  io.close();
-  httpServer.close(() => process.exit(0));
-};
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+  io.close();
+  await new Promise<void>((resolve) => {
+    httpServer.close(() => resolve());
+  });
+  await disconnectDatabase();
+  process.exit(0);
+}
+
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
+async function start(): Promise<void> {
+  await connectDatabase();
+  httpServer.listen(env.API_PORT, env.API_HOST, () => {
+    console.info(`SOC API listening on ${env.API_HOST}:${env.API_PORT}`);
+  });
+}
+
+start().catch(async (error: unknown) => {
+  console.error("API startup failed:", error instanceof Error ? error.message : "Unknown error");
+  await disconnectDatabase();
+  process.exit(1);
+});
