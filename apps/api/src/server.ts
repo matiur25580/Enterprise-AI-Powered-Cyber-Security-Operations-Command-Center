@@ -15,6 +15,7 @@ import { authorizeSocketTenantSubscription } from "./modules/identity/socket-ten
 import { verifyAccessToken } from "./modules/identity/token.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { eventRouter } from "./modules/events/event.routes.js";
+import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { AuditHead } from "./modules/audit/models/AuditHead.js";
 import { AuditLog } from "./modules/audit/models/AuditLog.js";
 import { SecurityEvent } from "./modules/events/models/SecurityEvent.js";
@@ -50,6 +51,7 @@ app.get("/api/v1/health/ready", (_request, response) => {
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/audit", auditRouter);
 app.use("/api/v1/events", eventRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 
 app.use((error: unknown, request: express.Request, response: express.Response, _next: express.NextFunction) => {
   const bodyError = error as { type?: string } | null;
