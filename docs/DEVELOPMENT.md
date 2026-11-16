@@ -46,8 +46,8 @@ pnpm test
 ## Current limitations
 
 This is an early scaffold, not a production deployment:
-- Database connection lifecycle and migrations are not implemented yet.
-- Authentication, authorization and tenant middleware are not implemented yet.
+- MongoDB connection lifecycle and basic identity models are implemented; migration/versioning workflow is not implemented yet.
+- Tenant-aware login, access-token authentication and permission middleware are implemented; tenant-isolation tests and full authorization coverage are still pending.
 - Socket.IO connections are deliberately disconnected until handshake authentication and tenant-room authorization exist.
 - No real response action is enabled.
-- CI currently validates typechecking and builds; test suites will be added with each domain module.
+- CI currently validates typechecking and builds; automated test suites and CI test execution are still pending.
