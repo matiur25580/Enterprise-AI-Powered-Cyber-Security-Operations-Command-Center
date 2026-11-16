@@ -13,6 +13,8 @@ import { attachRequestContext } from "./identity/request-context.js";
 import { Membership } from "./identity/models/Membership.js";
 import { createAccessToken } from "./identity/token.js";
 import { eventRouter } from "./events/event.routes.js";
+import { detectionRouter } from "./detection/detection.routes.js";
+import { DetectionFinding } from "./detection/models/DetectionFinding.js";
 import { dashboardRouter } from "./dashboard/dashboard.routes.js";
 import { SecurityEvent } from "./events/models/SecurityEvent.js";
 import { validateLocalTestMongoUri } from "../testing/test-mongo-uri.js";
@@ -54,13 +56,14 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
     { tenantId: tenantA, userId: viewerId, roles: ["viewer"], status: "active" },
     { tenantId: tenantB, userId: tenantBManagerId, roles: ["soc_manager"], status: "active" },
   ]);
-  await Promise.all([AuditLog.init(), AuditHead.init(), SecurityEvent.init(), Membership.init()]);
+  await Promise.all([AuditLog.init(), AuditHead.init(), SecurityEvent.init(), Membership.init(), DetectionFinding.init()]);
 
   const app = express();
   app.use(attachRequestContext);
   app.use(express.json({ limit: "256kb" }));
   app.use("/api/v1/audit", auditRouter);
   app.use("/api/v1/events", eventRouter);
+  app.use("/api/v1/detections", detectionRouter);
   app.use("/api/v1/dashboard", dashboardRouter);
   app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     response.status(500).json({ error: error instanceof Error ? error.name : "UnknownError" });
@@ -292,6 +295,45 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
       assert.equal(result.meta.createdCount, 1);
       assert.equal(result.meta.rejectedCount, 1);
       assert.equal(await SecurityEvent.countDocuments({ organizationId: tenantA }), 2);
+    });
+
+    await t.test("repeated failed authentication events create tenant-scoped findings", async () => {
+      let lastDetection: { findingId: string | null; score: number } | undefined;
+      for (let index = 0; index < 5; index += 1) {
+        const response = await fetch(`${baseUrl}/events/ingest`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${managerToken}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            ...validEvent,
+            eventId: `brute-force-${index}`,
+            timestamp: new Date(Date.now() - (4 - index) * 1_000).toISOString(),
+            severity: "low",
+            username: "correlated-user",
+            sourceIp: "192.0.2.77",
+          }),
+        });
+        assert.equal(response.status, 201);
+        const body = await response.json() as { meta: { detection: { findingId: string | null; score: number } } };
+        lastDetection = body.meta.detection;
+      }
+
+      assert.ok(lastDetection?.findingId);
+      assert.equal(lastDetection?.score, 50);
+      const managerFindings = await fetch(`${baseUrl}/detections/findings`, {
+        headers: { authorization: `Bearer ${managerToken}` },
+      });
+      assert.equal(managerFindings.status, 200);
+      const managerBody = await managerFindings.json() as { data: Array<{ riskScore: number; ruleKeys: string[] }> };
+      assert.equal(managerBody.data.length, 1);
+      assert.equal(managerBody.data[0]?.riskScore, 50);
+      assert.ok(managerBody.data[0]?.ruleKeys.includes("identity.repeated-authentication-failures"));
+
+      const otherTenantFindings = await fetch(`${baseUrl}/detections/findings`, {
+        headers: { authorization: `Bearer ${tenantBToken}` },
+      });
+      assert.equal(otherTenantFindings.status, 200);
+      const otherTenantBody = await otherTenantFindings.json() as { data: unknown[] };
+      assert.equal(otherTenantBody.data.length, 0);
     });
   } finally {
     const runningServer = server;

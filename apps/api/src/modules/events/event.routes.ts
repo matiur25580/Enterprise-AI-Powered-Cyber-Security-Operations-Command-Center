@@ -16,6 +16,7 @@ import { EventIngestionService } from "./ingestion-service.js";
 import { SecurityEvent } from "./models/SecurityEvent.js";
 import { bulkSecurityEventInputSchema, securityEventInputSchema } from "./event-schema.js";
 import { normalizeSecurityEvent } from "./event-normalization.js";
+import { DetectionService } from "../detection/detection-service.js";
 
 const router: import("express").Router = Router();
 const severityValues = ["info", "low", "medium", "high", "critical"] as const;
@@ -137,6 +138,7 @@ router.post(
       parsed.data,
       idempotencyKey,
     );
+    const detection = await DetectionService.evaluateEvent(String(result.event._id));
     await AuditService.append({
       organizationId: request.principal!.tenantId,
       actorUserId: request.principal!.userId,
@@ -154,7 +156,7 @@ router.post(
 
     response.status(result.duplicate ? 200 : 201).json({
       data: eventResponse(result.event),
-      meta: { requestId: requestId(request), duplicate: result.duplicate },
+      meta: { requestId: requestId(request), duplicate: result.duplicate, detection },
     });
   },
 );
@@ -187,6 +189,7 @@ router.post(
     const failures: Array<{ index: number; code: string }> = [];
     let createdCount = 0;
     let duplicateCount = 0;
+    let findingCount = 0;
 
     for (const [index, rawEvent] of parsedBatch.data.events.entries()) {
       const parsed = securityEventInputSchema.safeParse(rawEvent);
@@ -208,7 +211,9 @@ router.post(
         parsed.data,
         perEventIdempotencyKey,
       );
-      results.push({ index, duplicate: result.duplicate, event: eventResponse(result.event) });
+      const detection = await DetectionService.evaluateEvent(String(result.event._id));
+      if (detection.findingId) findingCount += 1;
+      results.push({ index, duplicate: result.duplicate, detection, event: eventResponse(result.event) });
       if (result.duplicate) duplicateCount += 1;
       else createdCount += 1;
     }
@@ -228,6 +233,7 @@ router.post(
         submittedCount: parsedBatch.data.events.length,
         createdCount,
         duplicateCount,
+        findingCount,
         rejectedCount: failures.length,
       },
     });
