@@ -290,7 +290,7 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
       const partiallyMalformed = await fetch(`${baseUrl}/events/bulk-ingest`, {
         method: "POST",
         headers: { authorization: `Bearer ${managerToken}`, "content-type": "application/json" },
-        body: JSON.stringify({ events: [validEvent, { ...validEvent, severity: "urgent" }] }),
+        body: JSON.stringify({ events: [{ ...validEvent, eventId: "bulk-valid-event" }, { ...validEvent, severity: "urgent" }] }),
       });
       assert.equal(partiallyMalformed.status, 207);
       const result = await partiallyMalformed.json() as { meta: { createdCount: number; rejectedCount: number } };
