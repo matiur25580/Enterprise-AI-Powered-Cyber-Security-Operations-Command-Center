@@ -88,7 +88,7 @@ router.patch("/:id/status", authenticate, requireTenantContext(), requireTenantM
   const previousStatus = incident.status;
   incident.status = parsed.data.status;
   if (parsed.data.status === "resolved") incident.resolvedAt = new Date();
-  if (parsed.data.status === "reopened") incident.resolvedAt = undefined;
+  if (parsed.data.status === "reopened") incident.resolvedAt = null;
   incident.timeline.push({
     actorUserId: new Types.ObjectId(request.principal!.userId),
     action: "incident.status_changed",
