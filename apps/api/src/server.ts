@@ -38,6 +38,13 @@ app.get("/api/v1/health/ready", (_request, response) => {
 
 app.use("/api/v1/auth", authRouter);
 
+app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled API error:", error instanceof Error ? error.message : "Unknown error");
+  response.status(500).json({
+    error: { code: "INTERNAL_SERVER_ERROR", message: "An unexpected server error occurred." },
+  });
+});
+
 const io = new SocketServer(httpServer, {
   cors: { origin: env.WEB_ORIGIN, credentials: true },
 });
