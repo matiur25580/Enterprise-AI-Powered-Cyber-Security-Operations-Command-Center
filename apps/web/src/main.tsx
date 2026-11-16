@@ -8,6 +8,7 @@ const API_BASE = (import.meta as ImportMeta & { env: { VITE_API_URL?: string } }
 type User = { id: string; email: string; displayName: string };
 type Organization = { id: string; name: string; slug: string };
 type EventRow = { id: string; occurredAt: string; source: string; eventType: string; severity: string; outcome: string | null; hostname: string | null; username: string | null };
+type FindingRow = { id: string; title: string; description: string; severity: string; riskScore: number; confidence: number; status: string; lastSeenAt: string };
 type Overview = {
   metrics: { eventsLast24Hours: number; eventsPrevious24Hours: number; eventVolumeChange: number | null; highSeverityLast24Hours: number };
   bySeverity: Record<string, number>;
@@ -22,6 +23,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [findings, setFindings] = useState<FindingRow[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -44,6 +46,14 @@ function App() {
     }
     const body = await response.json() as { data: Overview };
     setOverview(body.data);
+    const findingsResponse = await fetch(`${API_BASE}/detections/findings?status=open&limit=10`, {
+      headers: { authorization: `Bearer ${token}` },
+      credentials: "include",
+    });
+    if (findingsResponse.ok) {
+      const findingsBody = await findingsResponse.json() as { data: FindingRow[] };
+      setFindings(findingsBody.data);
+    }
     setLastUpdated(new Date().toISOString());
   }, []);
 
@@ -130,6 +140,12 @@ function App() {
       <article className="metric-card"><span>Telemetry status</span><strong className="healthy">Connected</strong><small>{lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : "Loading overview…"}</small></article>
     </section>
     <section className="content-grid">
+      <article className="panel"><div className="panel-heading"><h3>Open detections</h3><span>{findings.length} findings</span></div>
+        <div className="event-list">
+          {!findings.length && <p className="empty">No open detections. New findings appear here when rules match telemetry.</p>}
+          {findings.map((finding) => <div className="event-row" key={finding.id}><div className={`severity-dot ${finding.severity}`} /><div className="event-main"><strong>{finding.title}</strong><span>{finding.description}</span></div><strong className="risk-score">{finding.riskScore}</strong><em className={`tag ${finding.severity}`}>{finding.severity}</em></div>)}
+        </div>
+      </article>
       <article className="panel"><div className="panel-heading"><h3>Severity distribution</h3><span>Last 24 hours</span></div>
         {severities.map((severity) => {
           const count = overview?.bySeverity[severity] ?? 0;
