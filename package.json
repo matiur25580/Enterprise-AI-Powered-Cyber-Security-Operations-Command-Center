@@ -1,0 +1,20 @@
+{
+  "name": "enterprise-soc-command-center",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enterprise-minded SOC, SIEM, SOAR and GRC platform",
+  "packageManager": "pnpm@9.15.5",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.15.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @soc/api --filter @soc/web dev",
+    "dev:api": "pnpm --filter @soc/api dev",
+    "dev:web": "pnpm --filter @soc/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  }
+}
