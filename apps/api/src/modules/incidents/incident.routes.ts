@@ -6,6 +6,7 @@ import { AuditService } from "../audit/audit-service.js";
 import { authenticate } from "../identity/middleware/authenticate.js";
 import { requirePermission, requireTenantContext, requireTenantMembership } from "../identity/middleware/authorize.js";
 import { withTenantScope } from "../identity/tenant-scope.js";
+import { Membership } from "../identity/models/Membership.js";
 import { Incident } from "./models/Incident.js";
 import { canTransitionIncident } from "./incident-workflow.js";
 
@@ -80,7 +81,7 @@ router.patch("/:id/status", authenticate, requireTenantContext(), requireTenantM
     response.status(404).json({ error: { code: "INCIDENT_NOT_FOUND", message: "Incident was not found.", requestId: requestId(request) } });
     return;
   }
-  if (!canTransitionIncident(incident.status, parsed.data.status)) {
+  if (!canTransitionIncident(incident.status as import("@soc/contracts").IncidentStatus, parsed.data.status)) {
     response.status(409).json({ error: { code: "INVALID_STATUS_TRANSITION", message: "The requested incident status transition is not allowed.", requestId: requestId(request) } });
     return;
   }
@@ -115,7 +116,6 @@ router.patch("/:id/assignee", authenticate, requireTenantContext(), requireTenan
   }
   const assignee = parsed.data.assigneeUserId;
   if (assignee) {
-    const { Membership } = await import("../identity/models/Membership.js");
     const active = await Membership.exists({
       tenantId: new Types.ObjectId(request.principal!.tenantId),
       userId: new Types.ObjectId(assignee),
