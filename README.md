@@ -3,7 +3,7 @@
 > A standalone, enterprise-minded Security Operations (SOC), SIEM, SOAR and Governance, Risk & Compliance (GRC) platform.
 
 **Repository:** `matiur25580/Enterprise-AI-Powered-Cyber-Security-Operations-Command-Center`  
-**Status:** Architecture and foundation phase  
+**Status:** Foundation + identity backend implementation in progress  
 **License:** To be selected before public release
 
 ## Product vision
@@ -85,7 +85,7 @@ infra/
 - [x] Initial domain model documented
 - [x] API and security conventions documented
 - [ ] Monorepo and tooling scaffold
-- [ ] Authentication and tenant foundation
+- [x] Initial tenant-aware identity, RBAC and authentication foundation
 - [ ] Event ingestion and detection engine
 - [ ] Incident and response workflows
 - [ ] Asset and GRC modules
