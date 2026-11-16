@@ -31,8 +31,8 @@ app.get("/api/v1/health/live", (_request, response) => {
 
 app.get("/api/v1/health/ready", (_request, response) => {
   // Dependency readiness checks will be added when MongoDB/Redis connections are wired.
-  response.status(200).json({
-    data: { status: "ready", dependencies: { database: "not_configured" } },
+  response.status(503).json({
+    data: { status: "not_ready", dependencies: { database: "not_configured" } },
     meta: { timestamp: new Date().toISOString() },
   });
 });
