@@ -73,7 +73,7 @@ export class DetectionService {
         $set: {
           title,
           description,
-          severity: evaluation.severity === "info" ? "low" : evaluation.severity,
+          severity: evaluation.severity,
           riskScore: evaluation.score,
           confidence: evaluation.confidence,
           ruleKeys,
