@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test"
+    "test": "node --test",
+    "bootstrap:admin": "tsx src/scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
