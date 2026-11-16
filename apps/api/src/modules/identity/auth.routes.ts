@@ -1,6 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import argon2 from "argon2";
-import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 
@@ -43,7 +43,7 @@ const loginLimiter = rateLimit({
 
 function requireTrustedOrigin(request: import("express").Request, response: import("express").Response, next: import("express").NextFunction) {
   const origin = request.header("origin");
-  if (origin && origin !== env.WEB_ORIGIN) {
+  if (origin !== env.WEB_ORIGIN) {
     response.status(403).json({
       error: { code: "UNTRUSTED_ORIGIN", message: "Request origin is not allowed." },
     });
@@ -105,7 +105,7 @@ router.post("/login", loginLimiter, async (request, response) => {
     userId: user._id,
     tenantId: organization._id,
     refreshTokenHash: hashRefreshToken(refreshToken),
-    tokenFamilyId: crypto.randomUUID(),
+    tokenFamilyId: randomUUID(),
     expiresAt,
     lastUsedAt: new Date(),
   });
@@ -154,7 +154,7 @@ router.post("/refresh", requireTrustedOrigin, async (request, response) => {
   const existing = await Session.findOne({ refreshTokenHash: tokenHash }).select("+refreshTokenHash");
 
   if (!existing) {
-    response.clearCookie(refreshCookieName, { ...refreshCookieOptions, maxAge: undefined });
+    response.clearCookie(refreshCookieName, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict", path: "/api/v1/auth" });
     response.status(401).json({
       error: { code: "INVALID_REFRESH", message: "The refresh session is invalid." },
     });
@@ -277,4 +277,4 @@ router.get("/me", authenticate, async (request, response) => {
   });
 });
 
-export { router as authRouter, cookieParser };
+export { router as authRouter };
