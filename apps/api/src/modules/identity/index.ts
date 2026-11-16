@@ -1,6 +1,9 @@
 export * from "./roles.js";
 export * from "./tenant-scope.js";
+export * from "./token.js";
 export * from "./middleware/authorize.js";
+export * from "./middleware/authenticate.js";
+export { authRouter } from "./auth.routes.js";
 export { Organization } from "./models/Organization.js";
 export { User } from "./models/User.js";
 export { Membership } from "./models/Membership.js";
