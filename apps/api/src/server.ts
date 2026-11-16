@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -6,6 +7,7 @@ import { Server as SocketServer } from "socket.io";
 
 import { connectDatabase, disconnectDatabase, isDatabaseReady } from "./config/database.js";
 import { env } from "./config/env.js";
+import { authRouter } from "./modules/identity/auth.routes.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -14,6 +16,7 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "256kb" }));
+app.use(cookieParser());
 
 app.get("/api/v1/health/live", (_request, response) => {
   response.status(200).json({
@@ -33,15 +36,14 @@ app.get("/api/v1/health/ready", (_request, response) => {
   });
 });
 
+app.use("/api/v1/auth", authRouter);
+
 const io = new SocketServer(httpServer, {
   cors: { origin: env.WEB_ORIGIN, credentials: true },
 });
 
-// Until token verification and tenant room authorization are implemented,
-// reject all socket sessions rather than expose unauthenticated realtime data.
-io.on("connection", (socket) => {
-  socket.disconnect(true);
-});
+// Until tenant-room authorization is implemented, reject realtime sessions.
+io.on("connection", (socket) => socket.disconnect(true));
 
 let shuttingDown = false;
 
@@ -49,11 +51,8 @@ async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   console.info(`Received ${signal}; shutting down gracefully.`);
-
   io.close();
-  await new Promise<void>((resolve) => {
-    httpServer.close(() => resolve());
-  });
+  await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   await disconnectDatabase();
   process.exit(0);
 }
