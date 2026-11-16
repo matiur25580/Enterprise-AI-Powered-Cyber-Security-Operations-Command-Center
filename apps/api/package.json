@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test",
+    "test": "tsx --test src/**/*.test.ts",
     "bootstrap:admin": "tsx src/scripts/bootstrap-admin.ts"
   },
   "dependencies": {

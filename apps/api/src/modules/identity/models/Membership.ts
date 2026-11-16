@@ -10,7 +10,7 @@ const membershipSchema = new Schema({
     required: true,
   },
   status: { type: String, enum: ["active", "suspended"], default: "active", required: true },
-}, { timestamps: true, versionKey: true });
+}, { timestamps: true });
 
 membershipSchema.index({ tenantId: 1, userId: 1 }, { unique: true });
 

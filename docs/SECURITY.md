@@ -80,11 +80,27 @@ Default mode is `simulation`.
 
 ## 8. Audit integrity
 
-- Audit records are append-only at the application layer.
-- Hash chaining supports tamper-evidence and integrity verification.
-- Protect audit storage and backups independently from the primary application credentials.
-- Log authentication events, permission changes, exports, response approvals and incident transitions.
-- Avoid logging passwords, access tokens, refresh tokens, secrets or unnecessary personal data.
+- Audit records are append-oriented through `AuditService`; a per-organization MongoDB lock serializes writers across API processes, and a unique organization/chain-index index prevents duplicate sequence positions.
+- Each entry uses SHA-256 over canonicalized entry fields, sanitized metadata, chain index, and prior entry hash. Verification re-reads the organization chain and recomputes every entry without trusting the mutable head document.
+- This is tamper-evident, not absolutely immutable: a privileged writer can recompute a rewritten chain, and truncating only the tail is not detectable without an independently retained checkpoint. No external signed checkpoint, WORM storage, independent backup, or out-of-band monitoring is implemented. Restrict database write access, preserve independent backups, and schedule verification.
+- Application startup explicitly creates the audit/event indexes; startup fails if index creation fails. Existing incompatible/conflicting data must be reconciled before deployment.
+- Startup rejects legacy `tenantId`-based audit documents instead of silently excluding them from the new chain; those documents require an explicit migration before upgrade.
+- MongoDB integration tests reject remote MongoDB URIs and non-test database names, use a unique disposable local test database, and never read `MONGODB_URI`.
+- Implemented audit coverage includes login success/failure when the organization is resolvable, logout/logout-all, refresh rotation/replay, session revocation, permission denial, event ingestion, and audit exports.
+- Incident, asset, response, user/role, and configuration mutation APIs are not present yet. Their future handlers must call `AuditService.append` after authorization and before returning success; this repository does not claim those operations are currently logged.
+- Unknown-tenant login failures, malformed login bodies, and refresh/logout tokens that cannot be associated with an existing session cannot be attached to a tenant chain and are not written to this tenant-scoped audit collection.
+- Audit metadata and event payloads are recursively redacted for common password, token, secret, credential, cookie, session/CSRF, API/private-key, and signature field names. Avoid placing sensitive values in unstructured free-text fields; this filter is not a general-purpose secret detector.
+- Never log passwords, access/refresh tokens, credentials, secrets, or raw event payloads.
+
+## 9. Event ingestion safeguards
+
+- Event API requests require an authenticated principal, active membership, and `events:ingest`; organization ownership is derived from the principal, never from input.
+- Ingestion schemas are strict, bulk batches are limited to 100 events and request bodies to 256 KiB, and ingestion is rate limited.
+- The current `express-rate-limit` limits use the process-local memory store and source IP; they are not shared across API instances. Use a distributed store or gateway-level limiter before horizontally scaling.
+- Duplicate source/event identities and idempotency keys are uniquely constrained per organization. Idempotency keys are stored only as SHA-256 digests.
+- Event raw/normalized data is treated as untrusted JSON data, size/depth bounded, recursively redacted, and never executed. API output applies redaction again.
+- Event query filters are allowlisted, date searches are limited to 31 days, and all reads (including ID lookups) include tenant scope.
+- Collector-specific credentials, downstream event processing, retention automation, and scheduled audit verification are not implemented.
 
 ## 9. Privacy and compliance
 

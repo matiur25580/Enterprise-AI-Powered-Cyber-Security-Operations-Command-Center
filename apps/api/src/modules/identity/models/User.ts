@@ -10,7 +10,7 @@ const userSchema = new Schema({
   status: { type: String, enum: ["invited", "active", "disabled"], default: "invited", required: true },
   mfaEnabled: { type: Boolean, default: false },
   lastLoginAt: { type: Date },
-}, { timestamps: true, versionKey: true });
+}, { timestamps: true });
 
 userSchema.index({ emailNormalized: 1 }, { unique: true });
 

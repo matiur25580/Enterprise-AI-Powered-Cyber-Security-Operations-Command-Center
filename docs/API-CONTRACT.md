@@ -27,7 +27,7 @@ Access tokens are short-lived. Refresh tokens are rotated, stored as hashes serv
 | Resource | Endpoints |
 |---|---|
 | Dashboard | `GET /dashboard/summary`, `GET /dashboard/trends` |
-| Events | `GET /events`, `GET /events/:eventId`, `POST /ingest/events` |
+| Events | `GET /events`, `GET /events/:id`, `POST /events/ingest`, `POST /events/bulk-ingest` |
 | Findings | `GET /findings`, `GET /findings/:findingId` |
 | Detection rules | `GET /detection-rules`, privileged create/update/enable endpoints |
 | Incidents | `GET /incidents`, `POST /incidents`, `GET /incidents/:id`, `PATCH /incidents/:id` |
@@ -37,7 +37,7 @@ Access tokens are short-lived. Refresh tokens are rotated, stored as hashes serv
 | Vulnerabilities | `GET /vulnerabilities`, `PATCH /vulnerabilities/:id` |
 | Threat intelligence | `GET /indicators`, privileged indicator management |
 | GRC | `GET /grc/frameworks`, `GET /grc/controls`, `GET /grc/assessments` |
-| Audit | `GET /audit-logs`, integrity verification endpoint for auditors/admins |
+| Audit | `GET /audit`, `GET /audit/:id`, `GET /audit/verify`, `GET /audit/export` |
 | Users and roles | `GET /users`, `GET /roles`, privileged membership/role endpoints |
 
 Exact payload schemas and permission requirements will live in shared contracts and OpenAPI documentation as endpoints are implemented.
@@ -116,3 +116,35 @@ Payloads contain only identifiers, tenant-scoped routing metadata and minimal di
 - State transitions use optimistic concurrency/version checks.
 - Retried worker jobs must be safe to execute more than once.
 - Side effects occur only after authorization and required approval checks.
+
+## 9. Implemented audit and event endpoints
+
+Every endpoint below requires a bearer access token, an active membership in the token's organization, and the listed permission. The API derives organization scope from the authenticated principal; clients cannot select another organization. The persisted audit/event records use `organizationId`; the principal's existing Phase 2 `tenantId` is the authoritative organization ID and is applied using the shared tenant-scope helper.
+
+### Audit
+
+| Method and path | Permission | Behavior |
+|---|---|---|
+| `GET /api/v1/audit` | `audit:read` | Tenant-only audit records, newest chain index first. |
+| `GET /api/v1/audit/:id` | `audit:read` | Tenant-only record lookup; an ID from another organization returns 404. |
+| `GET /api/v1/audit/verify` | `audit:read` | Re-hashes the complete tenant chain; returns 409 if verification fails. Rate limited. |
+| `GET /api/v1/audit/export` | `audit:read` | Sanitized JSON export, required date range up to 31 days and at most 500 records. Export is itself audited. Rate limited. |
+
+Audit list filters are allowlisted: `action`, `resourceType`, `outcome`, `severity`, `actorUserId`, `startDate`, and `endDate`. Date filters must be supplied together. `limit` is 1–100 (default 50); `cursor` is a chain index from the prior response. Export supports the same filters except pagination. Audit entries expose `organizationId`, actor, action/resource, timestamp, request/source context, outcome, severity, sanitized metadata, `previousHash`, `entryHash`, and `chainIndex`.
+
+### Security event ingestion and search
+
+| Method and path | Permission | Behavior |
+|---|---|---|
+| `POST /api/v1/events/ingest` | `events:ingest` | Validate, normalize, redact, and store one event. |
+| `POST /api/v1/events/bulk-ingest` | `events:ingest` | Ingest up to 100 event objects; returns per-index validation failures with 207 for partial success. |
+| `GET /api/v1/events` | `events:read` | Tenant-only filtered event search with cursor pagination. |
+| `GET /api/v1/events/:id` | `events:read` | Tenant-only event lookup; an ID from another organization returns 404. |
+
+Event input is strict and does not accept `organizationId` or `tenantId`; event ownership always comes from the authenticated principal. The normalized input fields are `eventId`, ISO `timestamp`, `source`, `sourceType`, optional source/destination IP, username, hostname, event type/category/severity, optional action/outcome, object-valued `rawEvent` and `normalizedData`, and up to 50 tags. `processingStatus` is assigned by the server (`pending`). Common password, token, secret, credential, cookie, session/CSRF, API/private-key, and signature fields are replaced with `[REDACTED]` before storage and response. Raw event data is stored as data only and is never executed.
+
+An optional `Idempotency-Key` header is accepted on ingestion and stored only as a SHA-256 digest. Duplicate `(organization, source, eventId)` values and repeated idempotency keys return the existing event. Bulk requests accept 1–100 items and are additionally bounded by the API's 256 KiB JSON body limit. Search requires `startDate` and `endDate` within a maximum 31-day range; `limit` is 1–100 and cursors are opaque base64url timestamp/ID pairs. Filters are allowlisted (`severity`, `eventType`, `source`, `hostname`, `username`). Ingestion endpoints are limited to 120 requests/minute per IP; event and audit list/detail reads are limited to 300 requests/minute, and audit verify/export share a 5 requests/minute limit.
+
+Security-event collector credentials are not yet a separate identity type: ingestion currently requires a normal authenticated membership with `events:ingest`.
+
+The MongoDB integration suite uses only a loopback URI with a `soc_api_test*` database name and overrides it with a unique disposable database; it never uses the application's `MONGODB_URI`.

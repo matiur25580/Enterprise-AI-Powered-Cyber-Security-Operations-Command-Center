@@ -9,7 +9,7 @@ const sessionSchema = new Schema({
   revokedAt: { type: Date },
   rotatedFrom: { type: Schema.Types.ObjectId, ref: "Session" },
   lastUsedAt: { type: Date },
-}, { timestamps: true, versionKey: true });
+}, { timestamps: true });
 
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 sessionSchema.index({ tokenFamilyId: 1, revokedAt: 1 });

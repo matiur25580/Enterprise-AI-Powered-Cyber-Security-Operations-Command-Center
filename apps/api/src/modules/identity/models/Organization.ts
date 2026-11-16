@@ -8,7 +8,7 @@ const organizationSchema = new Schema({
     timezone: { type: String, default: "UTC" },
     dataRetentionDays: { type: Number, min: 1, max: 3650, default: 90 },
   },
-}, { timestamps: true, versionKey: true });
+}, { timestamps: true });
 
 organizationSchema.index({ slug: 1 }, { unique: true });
 

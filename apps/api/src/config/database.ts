@@ -24,7 +24,7 @@ export async function connectDatabase(): Promise<void> {
   });
   mongoose.connection.on("error", (error) => {
     connected = false;
-    console.error("MongoDB connection error:", error.message);
+    console.error("MongoDB connection error:", error.name);
   });
 }
 

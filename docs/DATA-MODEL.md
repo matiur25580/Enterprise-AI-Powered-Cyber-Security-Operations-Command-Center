@@ -4,7 +4,7 @@ This document defines the initial logical model. Physical Mongoose schemas will 
 
 ## 1. Modeling conventions
 
-- Every tenant-owned document includes `tenantId`.
+- Identity/membership documents use `tenantId`; audit and event documents use `organizationId` for the same authenticated tenant context.
 - IDs are opaque MongoDB ObjectIds at the persistence layer and serialized as strings in API contracts.
 - Store timestamps in UTC; preserve the original event timestamp and ingestion timestamp separately.
 - Use explicit enums and schema validation for lifecycle fields.
@@ -43,11 +43,11 @@ This document defines the initial logical model. Physical Mongoose schemas will 
 - `lastSeenAt`, `configuration`, `createdAt`
 
 ### securityEvents
-- `_id`, `tenantId`, `sourceId`, `eventKey`, `eventType`
-- `occurredAt`, `ingestedAt`, `severity`, `outcome`
-- `actor`, `source`, `destination`, `assetId`, `rawReference`
-- `normalized`, `labels[]`, `correlationKeys[]`
-- Unique/deduplication strategy is source-aware; do not assume all identical payloads are duplicates.
+- `_id`, `organizationId`, `eventId`, `occurredAt`, `source`, `sourceType`
+- `sourceIp`, `destinationIp`, `username`, `hostname`, `eventType`, `category`
+- `severity`, `action`, `outcome`, redacted `rawEvent`, redacted `normalizedData`
+- `tags[]`, `processingStatus` (`pending`, `processed`, or `failed`), optional `idempotencyKeyHash`
+- Duplicate identities are scoped by tenant and `source + eventId`; optional idempotency keys are stored as SHA-256 digests.
 
 ### detectionRules
 - `_id`, `tenantId` (null for platform-managed rules), `ruleKey`, `version`
@@ -94,26 +94,36 @@ This document defines the initial logical model. Physical Mongoose schemas will 
 - Framework mappings are guidance, not a certification or legal-compliance guarantee.
 
 ### auditLogs
-- `_id`, `tenantId`, `actorId`, `action`, `resourceType`, `resourceId`
-- `requestId`, `ipAddress`, `userAgent`, `beforeHash`, `afterHash`
-- `occurredAt`, `previousRecordHash`, `recordHash`
-- Append-only writes; integrity chain is periodically verifiable. Hash chaining is tamper-evident, not a substitute for independently protected backups or WORM storage.
+- `_id`, `organizationId`, `actorUserId`, `actorRole`, `action`, `resourceType`, `resourceId`
+- `occurredAt`, `sourceIp`, `userAgent`, `requestId`, `outcome`, `severity`, redacted `metadata`
+- `previousHash`, `entryHash`, `chainIndex`
+- Application writes are append-oriented and serialized with `auditHeads`; verification recomputes the full organization chain rather than trusting its mutable head. SHA-256 chaining detects alteration, reordering, and interior removal while the remaining chain is retained, but cannot detect tail truncation without an external checkpoint. It is not immutable storage and can be recomputed by a privileged database writer.
+
+### auditHeads
+- One operational lock/head document per tenant: `organizationId`, `headSequence`, `headHash`, `lockOwner`, `lockExpiresAt`.
+- The head coordinates cross-process append locking. The audit verifier does not treat the head as evidence of integrity.
 
 ## 3. Initial indexes
 
 | Collection | Index |
 |---|---|
 | memberships | unique `tenantId, userId` |
-| securityEvents | `tenantId, occurredAt desc` |
-| securityEvents | `tenantId, eventType, occurredAt desc` |
-| securityEvents | `tenantId, severity, occurredAt desc` |
+| securityEvents | `organizationId, occurredAt desc, _id desc` |
+| securityEvents | `organizationId, eventType, occurredAt desc` |
+| securityEvents | `organizationId, severity, occurredAt desc` |
+| securityEvents | unique `organizationId, source, eventId` |
+| securityEvents | unique partial `organizationId, idempotencyKeyHash` |
 | findings | `tenantId, status, lastSeenAt desc` |
 | incidents | unique `tenantId, incidentNumber` |
 | incidents | `tenantId, status, severity, updatedAt desc` |
 | incidentActivities | `tenantId, incidentId, createdAt` |
 | assets | unique `tenantId, assetTag` |
 | indicators | `tenantId, indicatorType, valueNormalized` |
-| auditLogs | `tenantId, occurredAt desc` |
+| auditLogs | unique `organizationId, chainIndex desc` |
+| auditLogs | `organizationId, occurredAt desc` |
+| auditLogs | `organizationId, action, occurredAt desc` |
+| auditLogs | `organizationId, severity, occurredAt desc` |
+| auditHeads | unique `organizationId` |
 | sessions | TTL on `expiresAt` |
 
 Index design will be validated against real query plans and representative seeded data. Avoid unbounded arrays and unbounded event retention.
