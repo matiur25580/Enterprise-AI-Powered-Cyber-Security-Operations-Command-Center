@@ -1,0 +1,46 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e6edf7;
+  background: #080d17;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --muted: #8997ad;
+  --line: rgba(148, 163, 184, 0.16);
+  --panel: #101827;
+  --accent: #43d9c5;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+.shell {
+  min-height: 100vh;
+  padding: 32px clamp(20px, 6vw, 88px);
+  background:
+    radial-gradient(ellipse at 75% 12%, rgba(30, 110, 130, .16), transparent 38%),
+    linear-gradient(145deg, #080d17 0%, #0b1422 55%, #09101c 100%);
+}
+.topbar { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 22px; }
+.brand-mark {
+  display: grid; place-items: center; width: 42px; height: 42px;
+  border: 1px solid rgba(67, 217, 197, .45); border-radius: 12px;
+  color: var(--accent); font-size: 20px; font-weight: 800;
+  background: rgba(67, 217, 197, .08);
+}
+.eyebrow { color: var(--accent); font-size: 10px; letter-spacing: .18em; font-weight: 700; }
+.topbar .eyebrow { margin: 0 0 3px; }
+h1 { margin: 0; font-size: 16px; letter-spacing: .01em; }
+.environment {
+  margin-left: auto; border: 1px solid var(--line); border-radius: 999px;
+  padding: 7px 11px; color: var(--muted); font-size: 10px; letter-spacing: .12em;
+}
+.welcome { max-width: 760px; margin: clamp(100px, 19vh, 190px) auto 120px; }
+.welcome h2 { margin: 16px 0; font-size: clamp(38px, 7vw, 68px); line-height: 1.04; letter-spacing: -.055em; }
+.intro { max-width: 600px; color: #aab7c9; font-size: 16px; line-height: 1.8; }
+.status-row {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 28px;
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px 15px;
+  background: rgba(16, 24, 39, .8); color: #c7d3e3; font-size: 13px;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px rgba(67,217,197,.7); }
+footer { border-top: 1px solid var(--line); padding-top: 18px; color: #64748b; font-size: 11px; }
