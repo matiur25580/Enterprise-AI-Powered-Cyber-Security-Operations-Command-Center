@@ -18,12 +18,12 @@ The roadmap is capability-driven. A phase is complete only when its acceptance c
 
 ## Phase 1 — Identity, tenancy and platform shell
 
-- [ ] Organization and membership model.
-- [ ] Registration/invitation policy and login.
-- [ ] Password hashing, access tokens and rotating refresh sessions.
-- [ ] RBAC permission registry and server-side authorization middleware.
+- [x] Organization and membership model.
+- [x] Tenant-aware login (account provisioning is invitation/bootstrap only; public registration is intentionally disabled).
+- [x] Argon2id password verification, signed short-lived access tokens and rotating opaque refresh sessions.
+- [x] RBAC permission registry and server-side authorization middleware.
 - [ ] Tenant isolation tests.
-- [ ] Audit service and request correlation IDs.
+- [ ] Audit write service, request correlation IDs and cross-tenant authorization test suite.
 - [ ] React application shell, navigation and protected routes.
 
 **Exit criteria:** users can sign in, operate only within authorized tenant scope, and privileged actions are audited.
