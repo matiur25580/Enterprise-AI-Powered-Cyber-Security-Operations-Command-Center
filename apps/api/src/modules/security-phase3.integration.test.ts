@@ -13,6 +13,7 @@ import { attachRequestContext } from "./identity/request-context.js";
 import { Membership } from "./identity/models/Membership.js";
 import { createAccessToken } from "./identity/token.js";
 import { eventRouter } from "./events/event.routes.js";
+import { dashboardRouter } from "./dashboard/dashboard.routes.js";
 import { SecurityEvent } from "./events/models/SecurityEvent.js";
 import { validateLocalTestMongoUri } from "../testing/test-mongo-uri.js";
 
@@ -60,6 +61,7 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
   app.use(express.json({ limit: "256kb" }));
   app.use("/api/v1/audit", auditRouter);
   app.use("/api/v1/events", eventRouter);
+  app.use("/api/v1/dashboard", dashboardRouter);
   app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     response.status(500).json({ error: error instanceof Error ? error.name : "UnknownError" });
   });
