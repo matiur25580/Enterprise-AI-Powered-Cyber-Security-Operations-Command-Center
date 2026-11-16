@@ -162,6 +162,7 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
         { path: `/audit/${eventId}`, method: "GET" },
         { path: "/audit/verify", method: "GET" },
         { path: "/audit/export?startDate=2026-01-01T00:00:00.000Z&endDate=2026-01-02T00:00:00.000Z", method: "GET" },
+        { path: "/dashboard/overview", method: "GET" },
         { path: "/events/ingest", method: "POST", body: validEvent },
         { path: "/events/bulk-ingest", method: "POST", body: { events: [validEvent] } },
         { path: "/events?startDate=2026-01-01T00:00:00.000Z&endDate=2026-01-02T00:00:00.000Z", method: "GET" },
@@ -193,6 +194,17 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
         { headers: { authorization: `Bearer ${viewerToken}` } },
       );
       assert.equal(viewerEventRead.status, 200);
+
+      const viewerDashboard = await fetch(`${baseUrl}/dashboard/overview`, {
+        headers: { authorization: `Bearer ${viewerToken}` },
+      });
+      assert.equal(viewerDashboard.status, 200);
+      const dashboardBody = await viewerDashboard.json() as {
+        data: { metrics: { eventsLast24Hours: number }; bySeverity: Record<string, number>; recentEvents: unknown[] };
+      };
+      assert.equal(typeof dashboardBody.data.metrics.eventsLast24Hours, "number");
+      assert.equal(Object.keys(dashboardBody.data.bySeverity).length, 5);
+      assert.equal(Array.isArray(dashboardBody.data.recentEvents), true);
 
       const clientSelectedOrganization = await fetch(`${baseUrl}/events/ingest`, {
         method: "POST",
