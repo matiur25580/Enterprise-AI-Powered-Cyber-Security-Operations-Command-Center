@@ -6,6 +6,10 @@
 **Status:** Foundation + identity backend implementation in progress  
 **License:** To be selected before public release
 
+## Screenshots
+
+A screenshot gallery will be added after the runnable SOC web workspace is implemented. The current repository status is documented below; planned screens must not be presented as existing product screenshots. See the [screenshot capture guide](docs/screenshots/README.md).
+
 ## Product vision
 
 A unified security operations workspace built around:
