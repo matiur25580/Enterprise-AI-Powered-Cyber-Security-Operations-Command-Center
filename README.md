@@ -1,74 +1,65 @@
-# Enterprise AI-Powered Cyber Security Operations Command Center
+# SOC Command Center — Security Operations Platform
 
-> A standalone, enterprise-minded Security Operations (SOC), SIEM, SOAR and Governance, Risk & Compliance (GRC) platform.
+An early-stage, defensive security operations portfolio project exploring tenant-aware identity, security-event workflows, detection findings, auditability and realtime updates.
 
-**Repository:** `matiur25580/Enterprise-AI-Powered-Cyber-Security-Operations-Command-Center`  
-**Status:** Foundation + identity backend implementation in progress  
-**License:** To be selected before public release
+**Status:** Active development · not production-ready  
+**Scope:** SOC / SIEM / SOAR / GRC concepts  
+**License:** No open-source license has been selected; all rights reserved unless a license is added.
 
-## Screenshots
+## Product direction
 
-A screenshot gallery will be added after the runnable SOC web workspace is implemented. The current repository status is documented below; planned screens must not be presented as existing product screenshots. See the [screenshot capture guide](docs/screenshots/README.md).
+The intended workflow is:
 
-## Product vision
+**Collect → Normalize → Detect → Investigate → Respond → Evidence**
 
-A unified security operations workspace built around:
+The long-term product direction includes:
 
-**Detect → Analyse → Respond → Comply**
+- Security-event ingestion, normalization and search.
+- Versioned detection rules and explainable findings.
+- Incident investigation and response workflows.
+- Tenant-scoped asset and vulnerability management.
+- Approval-controlled SOAR playbooks.
+- Compliance controls, evidence and audit reporting.
 
-The platform ingests security telemetry, correlates events, produces explainable risk assessments, manages incidents, orchestrates controlled response workflows, tracks assets and vulnerabilities, and provides auditable compliance evidence.
+These are product goals, not a claim that every module is implemented. See the [implementation roadmap](docs/ROADMAP.md) for capability-level status.
 
-This repository is an independent project. It does not merge, replace, or share source code with the owner's other repositories.
+## Current engineering foundation
 
-## Core capabilities
+The repository currently contains a pnpm TypeScript workspace with:
 
-- **SIEM:** Structured event ingestion, normalization, filtering, correlation and retention.
-- **Detection:** Versioned detection rules, brute-force detection, suspicious access patterns and explainable risk scoring.
-- **SOAR:** Approval-aware playbooks and simulated response actions with execution history.
-- **Incident management:** Severity, ownership, SLA, investigation notes, evidence and lifecycle timeline.
-- **Threat intelligence:** IOC enrichment and confidence/provenance tracking.
-- **Asset security:** Asset inventory, vulnerability findings, patch posture and endpoint state.
-- **Identity security:** RBAC, MFA-ready authentication, session controls and privileged activity audit.
-- **GRC:** Mapped controls for ISO/IEC 27001, GDPR and SOC 2, with evidence and assessment workflows.
-- **Reporting:** Operational and compliance reports with traceable data sources.
-- **Real time:** Live event and incident updates.
+- An Express 5 API and a Vite/React web application.
+- Tenant-aware identity and membership models.
+- Argon2id password verification, short-lived access tokens and rotating refresh sessions.
+- Server-side permission checks and authenticated tenant-aware Socket.IO connections.
+- API modules for identity, audit, security events, detections and dashboard data.
+- Shared workspace packages for contracts and configuration.
+- Environment validation, health/readiness endpoints and security middleware.
 
-## Technology direction
+The existence of a route or UI module does not mean the complete SOC workflow is finished. Detection quality, tenant-isolation coverage, incident operations, SOAR, GRC and production operations remain under active development.
+
+## Technology
 
 | Layer | Technology |
 |---|---|
-| Web application | React, Vite, TypeScript |
-| UI | Tailwind CSS, accessible component system |
-| Visualization | Recharts |
-| API | Node.js, Express, TypeScript |
-| Persistence | MongoDB, Mongoose |
-| Cache / queue | Redis (introduced when required by workload) |
-| Realtime | Socket.IO |
-| Authentication | Short-lived access tokens, rotating refresh sessions, MFA-ready design |
+| Web | React, Vite, TypeScript |
+| API | Node.js, Express 5, TypeScript |
+| Database | MongoDB, Mongoose |
+| Authentication | Argon2id, JWT access tokens, rotating refresh sessions |
 | Validation | Zod |
-| Testing | Vitest/Jest, Supertest, Playwright |
-| Delivery | Docker, GitHub Actions |
-| Deployment target | Render or another container-capable host |
+| Realtime | Socket.IO |
+| Security middleware | Helmet, CORS allowlist, rate limiting |
+| Tests | Node test runner / TypeScript test scripts |
+| Workspace | pnpm |
 
-## Architecture principles
-
-1. Security and authorization are enforced on the server, never only in the UI.
-2. Detection decisions are explainable, versioned and reproducible.
-3. Security response actions are simulated by default; real integrations require explicit configuration and authorization.
-4. Every privileged action and important state transition is auditable.
-5. Tenant boundaries are enforced in every query and mutation.
-6. APIs are validated, documented, tested and versioned.
-7. Operational claims are measured. No unverified accuracy, MTTR reduction or performance figures are advertised.
-
-## Repository layout
+## Repository structure
 
 ```text
 apps/
-  api/                 # Express API and realtime gateway
-  web/                 # React SOC console
+  api/                 # Express API
+  web/                 # React SOC workspace
 packages/
-  contracts/           # Shared API schemas and types
-  config/              # Shared TypeScript/lint configuration
+  contracts/           # Shared API contracts
+  config/              # Shared configuration
 docs/
   ARCHITECTURE.md
   DATA-MODEL.md
@@ -78,26 +69,65 @@ docs/
 infra/
   docker/
   scripts/
-.github/
-  workflows/
 ```
 
-## Development status
+## Local development
 
-- [x] Independent repository verified
-- [x] Initial architecture documented
-- [x] Initial domain model documented
-- [x] API and security conventions documented
-- [ ] Monorepo and tooling scaffold
-- [x] Initial tenant-aware identity, RBAC and authentication foundation
-- [ ] Event ingestion and detection engine
-- [ ] Incident and response workflows
-- [ ] Asset and GRC modules
-- [ ] Automated tests, CI and deployment
+### Requirements
 
-## Getting started
+- Node.js 22+
+- pnpm 9.15+
+- MongoDB (local or hosted)
 
-The runnable application scaffold is being introduced in staged commits. Setup instructions will be added with the first executable workspace release.
+Install dependencies from the repository root:
+
+```bash
+pnpm install
+cp apps/api/.env.example apps/api/.env
+```
+
+Update `apps/api/.env` with a reachable MongoDB URI and two different, unique random secrets of at least 32 characters:
+
+- `MONGODB_URI`
+- `JWT_ACCESS_SECRET`
+- `JWT_REFRESH_SECRET`
+
+Start both applications:
+
+```bash
+pnpm dev
+```
+
+Or run them separately:
+
+```bash
+pnpm dev:api
+pnpm dev:web
+```
+
+Default local URLs:
+
+- Web: http://localhost:5173
+- API: http://localhost:4000
+- Liveness: http://localhost:4000/api/v1/health/live
+- Readiness: http://localhost:4000/api/v1/health/ready
+
+## Quality commands
+
+Run from the repository root:
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+```
+
+These commands are the intended local quality gates. Run them in your environment before treating a change as verified; this README does not claim that they have passed in every environment.
+
+## Security and safe scope
+
+This is a defensive security project. Response integrations should remain simulated or approval-gated until they have explicit authorization, least-privilege credentials, audit trails and safety tests. Never connect it to production endpoints or ingest real customer security telemetry without a formal security review.
 
 ## Documentation
 
@@ -107,6 +137,6 @@ The runnable application scaffold is being introduced in staged commits. Setup i
 - [Security model](docs/SECURITY.md)
 - [Implementation roadmap](docs/ROADMAP.md)
 
-## Important scope note
+## Maintainer
 
-This is a defensive security operations platform. Initial response integrations operate in safe simulation mode and do not block public IP addresses, disable real accounts, or isolate real endpoints. Production integrations must be explicitly configured, permission-scoped, approved, tested and audited.
+**Matiur Rahaman** · [GitHub](https://github.com/matiur25580)
