@@ -8,6 +8,7 @@ import { Server as SocketServer } from "socket.io";
 
 import { connectDatabase, disconnectDatabase, isDatabaseReady } from "./config/database.js";
 import { env } from "./config/env.js";
+import { isAllowedOrigin } from "./config/origin-policy.js";
 import { authRouter } from "./modules/identity/auth.routes.js";
 import { attachRequestContext } from "./modules/identity/request-context.js";
 import { Membership } from "./modules/identity/models/Membership.js";
@@ -27,7 +28,16 @@ const httpServer = createServer(app);
 
 app.disable("x-powered-by");
 app.use(helmet());
-app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin, env.WEB_ORIGIN)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error("CORS_ORIGIN_DENIED"));
+  },
+  credentials: true,
+}));
 app.use(attachRequestContext);
 app.use(express.json({ limit: "256kb" }));
 app.use(cookieParser());
@@ -56,8 +66,26 @@ app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/detections", detectionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
-app.use((error: unknown, request: express.Request, response: express.Response, _next: express.NextFunction) => {
+app.use((request: express.Request, response: express.Response) => {
+  response.status(404).json({
+    error: { code: "NOT_FOUND", message: "The requested API route was not found.", requestId: request.requestId },
+  });
+});
+
+app.use((error: unknown, request: express.Request, response: express.Response, next: express.NextFunction) => {
   const bodyError = error as { type?: string } | null;
+  if (error instanceof Error && error.message === "CORS_ORIGIN_DENIED") {
+    response.status(403).json({
+      error: { code: "CORS_ORIGIN_DENIED", message: "The request origin is not allowed.", requestId: request.requestId },
+    });
+    return;
+  }
+  if (bodyError?.type === "entity.parse.failed") {
+    response.status(400).json({
+      error: { code: "INVALID_JSON", message: "The request body contains invalid JSON.", requestId: request.requestId },
+    });
+    return;
+  }
   if (bodyError?.type === "entity.too.large") {
     response.status(413).json({
       error: { code: "PAYLOAD_TOO_LARGE", message: "The request body exceeds the allowed size.", requestId: request.requestId },
@@ -72,6 +100,9 @@ app.use((error: unknown, request: express.Request, response: express.Response, _
 
 const io = new SocketServer(httpServer, {
   cors: { origin: env.WEB_ORIGIN, credentials: true },
+  allowRequest: (request, callback) => {
+    callback(null, isAllowedOrigin(request.headers.origin, env.WEB_ORIGIN));
+  },
 });
 
 io.use(async (socket, next) => {
