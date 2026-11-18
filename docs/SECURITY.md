@@ -38,7 +38,7 @@ Role names are templates; permission keys and tenant scope define actual access.
 ## 4. Application and API controls
 
 - Helmet and restrictive Content Security Policy.
-- CORS allowlist; no wildcard credentialed origins.
+- Exact CORS origin allowlist with server-side rejection of untrusted browser origins; no wildcard credentialed origins. Socket.IO handshakes enforce the same origin policy.
 - Rate limiting by identity, tenant and source where appropriate.
 - Request body and upload size limits.
 - Schema validation and safe query construction.
