@@ -19,7 +19,7 @@ export async function authenticate(
     return;
   }
 
-  let claims;
+  let claims: Awaited<ReturnType<typeof verifyAccessToken>>;
   try {
     claims = await verifyAccessToken(token);
   } catch {
