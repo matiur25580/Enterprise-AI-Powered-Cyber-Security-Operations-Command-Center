@@ -140,3 +140,80 @@ This is a defensive security project. Response integrations should remain simula
 ## Maintainer
 
 **Matiur Rahaman** · [GitHub](https://github.com/matiur25580)
+
+
+## Dashboard Gallery
+
+The following 12 repository-specific dashboard concepts illustrate the main security operations workspaces, including detection, incident response, ingestion, threat intelligence, exposure management, identity, cloud posture, compliance and automation. All figures are illustrative sample values; these are design previews, not screenshots of a live deployment or production telemetry.
+
+### 01. Security Operations Overview
+
+Threat posture, event volume, response health and analyst workload.
+
+![Security Operations Overview dashboard preview](docs/readme-dashboard-gallery/dashboard-01.svg)
+
+### 02. Threat Detection & Analytics
+
+Detection coverage, rule performance and suspicious activity trends.
+
+![Threat Detection & Analytics dashboard preview](docs/readme-dashboard-gallery/dashboard-02.svg)
+
+### 03. Incident Response Command
+
+Incident severity, ownership, escalation and response-stage visibility.
+
+![Incident Response Command dashboard preview](docs/readme-dashboard-gallery/dashboard-03.svg)
+
+### 04. Security Event Ingestion
+
+Collector throughput, ingestion lag, parsing quality and rejected events.
+
+![Security Event Ingestion dashboard preview](docs/readme-dashboard-gallery/dashboard-04.svg)
+
+### 05. Threat Intelligence Workspace
+
+Indicators, enrichment status, source confidence and watchlist activity.
+
+![Threat Intelligence Workspace dashboard preview](docs/readme-dashboard-gallery/dashboard-05.svg)
+
+### 06. Vulnerability Exposure
+
+Asset exposure, severity distribution, remediation age and patch status.
+
+![Vulnerability Exposure dashboard preview](docs/readme-dashboard-gallery/dashboard-06.svg)
+
+### 07. Endpoint Security Posture
+
+Endpoint coverage, agent health, policy compliance and isolation actions.
+
+![Endpoint Security Posture dashboard preview](docs/readme-dashboard-gallery/dashboard-07.svg)
+
+### 08. Identity & Access Monitoring
+
+Authentication anomalies, privileged access and account-risk signals.
+
+![Identity & Access Monitoring dashboard preview](docs/readme-dashboard-gallery/dashboard-08.svg)
+
+### 09. Cloud Security Posture
+
+Cloud asset inventory, configuration drift, exposed services and risk trends.
+
+![Cloud Security Posture dashboard preview](docs/readme-dashboard-gallery/dashboard-09.svg)
+
+### 10. Audit & Compliance Center
+
+Control evidence, audit events, policy exceptions and review readiness.
+
+![Audit & Compliance Center dashboard preview](docs/readme-dashboard-gallery/dashboard-10.svg)
+
+### 11. Security Automation & Playbooks
+
+Playbook runs, automated containment, approvals and execution outcomes.
+
+![Security Automation & Playbooks dashboard preview](docs/readme-dashboard-gallery/dashboard-11.svg)
+
+### 12. SOC Performance & Reporting
+
+Analyst workload, response-time trends, incident outcomes and service levels.
+
+![SOC Performance & Reporting dashboard preview](docs/readme-dashboard-gallery/dashboard-12.svg)
