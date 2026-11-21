@@ -138,6 +138,12 @@ router.post(
       parsed.data,
       idempotencyKey,
     );
+    if (result.conflict) {
+      response.status(409).json({
+        error: { code: "IDEMPOTENCY_KEY_REUSED", message: "This idempotency key was already used for a different event payload.", requestId: requestId(request) },
+      });
+      return;
+    }
     const detection = await DetectionService.evaluateEvent(String(result.event._id));
     await AuditService.append({
       organizationId: request.principal!.tenantId,
@@ -211,6 +217,10 @@ router.post(
         parsed.data,
         perEventIdempotencyKey,
       );
+      if (result.conflict) {
+        failures.push({ index, code: "IDEMPOTENCY_KEY_REUSED" });
+        continue;
+      }
       const detection = await DetectionService.evaluateEvent(String(result.event._id));
       if (detection.findingId) findingCount += 1;
       results.push({ index, duplicate: result.duplicate, detection, event: eventResponse(result.event) });

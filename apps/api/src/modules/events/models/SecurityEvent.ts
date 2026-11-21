@@ -20,6 +20,7 @@ const securityEventSchema = new Schema({
   tags: { type: [String], default: [] },
   processingStatus: { type: String, enum: ["pending", "processed", "failed"], required: true, default: "pending" },
   idempotencyKeyHash: { type: String, maxlength: 64 },
+  idempotencyPayloadHash: { type: String, maxlength: 64 },
 }, { versionKey: false, timestamps: { createdAt: true, updatedAt: true } });
 
 securityEventSchema.index({ organizationId: 1, occurredAt: -1, _id: -1 });
