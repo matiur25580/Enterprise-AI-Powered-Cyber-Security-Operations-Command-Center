@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { Membership } from "../models/Membership.js";
 import { verifyAccessToken } from "../token.js";
+import { principalFromActiveMembership } from "../current-principal.js";
 
 export async function authenticate(
   request: Request,
@@ -17,12 +19,30 @@ export async function authenticate(
     return;
   }
 
+  let claims: Awaited<ReturnType<typeof verifyAccessToken>>;
   try {
-    request.principal = await verifyAccessToken(token);
-    next();
+    claims = await verifyAccessToken(token);
   } catch {
     response.status(401).json({
       error: { code: "INVALID_TOKEN", message: "The access token is invalid or expired." },
     });
+    return;
   }
+
+  const membership = await Membership.findOne({
+    userId: claims.userId,
+    tenantId: claims.tenantId,
+    status: "active",
+  }).lean();
+  const principal = principalFromActiveMembership(claims, membership);
+
+  if (!principal) {
+    response.status(403).json({
+      error: { code: "TENANT_ACCESS_DENIED", message: "This user no longer has an active membership in the current tenant." },
+    });
+    return;
+  }
+
+  request.principal = principal;
+  next();
 }
