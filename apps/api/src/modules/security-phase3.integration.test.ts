@@ -250,12 +250,25 @@ test("MongoDB audit and event API integration", { skip: !mongoUri }, async (t) =
           "content-type": "application/json",
           "idempotency-key": "integration-idempotency-001",
         },
-        body: JSON.stringify({ ...validEvent, eventId: "different-event-id" }),
+        body: JSON.stringify(validEvent),
       });
       assert.equal(retry.status, 200);
       const retried = await retry.json() as { data: { id: string }; meta: { duplicate: boolean } };
       assert.equal(retried.meta.duplicate, true);
       assert.equal(retried.data.id, created.data.id);
+
+      const conflictingRetry = await fetch(`${baseUrl}/events/ingest`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${managerToken}`,
+          "content-type": "application/json",
+          "idempotency-key": "integration-idempotency-001",
+        },
+        body: JSON.stringify({ ...validEvent, eventId: "different-event-id" }),
+      });
+      assert.equal(conflictingRetry.status, 409);
+      const conflictBody = await conflictingRetry.json() as { error: { code: string } };
+      assert.equal(conflictBody.error.code, "IDEMPOTENCY_KEY_REUSED");
 
       const duplicateBySource = await fetch(`${baseUrl}/events/ingest`, {
         method: "POST",
