@@ -23,6 +23,7 @@ import { AuditHead } from "./modules/audit/models/AuditHead.js";
 import { AuditLog } from "./modules/audit/models/AuditLog.js";
 import { SecurityEvent } from "./modules/events/models/SecurityEvent.js";
 
+// Compose HTTP routes and the realtime Socket.IO server around one shared HTTP listener.
 const app = express();
 const httpServer = createServer(app);
 
