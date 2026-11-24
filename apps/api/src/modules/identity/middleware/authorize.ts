@@ -37,6 +37,7 @@ export async function validateActiveMembership(principal: AuthenticatedPrincipal
   }
 }
 
+// Reject client-supplied tenant identifiers that differ from the tenant established by authentication.
 export function requireTenantContext() {
   return (request: Request, response: Response, next: NextFunction): void => {
     const principal = request.principal;
