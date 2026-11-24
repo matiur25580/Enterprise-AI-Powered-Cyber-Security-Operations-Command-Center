@@ -45,3 +45,12 @@ test("a membership from another user or tenant cannot authorize the token", () =
     status: "active",
   }), null);
 });
+
+test("an active membership without assigned roles cannot authorize a principal", () => {
+  assert.equal(principalFromActiveMembership(claims, {
+    userId: "user-1",
+    tenantId: "tenant-1",
+    roles: [],
+    status: "active",
+  }), null);
+});
