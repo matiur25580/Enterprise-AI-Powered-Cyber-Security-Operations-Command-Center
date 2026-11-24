@@ -51,6 +51,7 @@ export function rejectTenantOverride(
  * The tenant ID must come from the authenticated server-side principal, never
  * directly from an untrusted request body or query string.
  */
+// Centralize tenant scoping in database filters to prevent cross-organization record access.
 export function withTenantScope<T extends TenantOwned | OrganizationOwned>(
   tenantId: string,
   filter: FilterQuery<T> = {},
