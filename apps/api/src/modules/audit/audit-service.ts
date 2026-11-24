@@ -45,6 +45,7 @@ export interface AuditHashEntry {
 const lockLeaseMs = 30_000;
 const lockWaitLimitMs = 20_000;
 
+// Normalize nested values and key order so equivalent audit entries produce the same hash input.
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value instanceof Date) return value.toISOString();
