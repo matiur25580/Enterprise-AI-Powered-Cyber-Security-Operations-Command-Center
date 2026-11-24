@@ -26,6 +26,7 @@ const severityWeight: Record<SecurityEventInput["severity"], number> = {
   critical: 35,
 };
 
+// Combine deterministic rule contributions into a bounded risk score with explainable evidence.
 export function evaluateSecurityEvent(
   event: SecurityEventInput,
   context: DetectionContext = {},
