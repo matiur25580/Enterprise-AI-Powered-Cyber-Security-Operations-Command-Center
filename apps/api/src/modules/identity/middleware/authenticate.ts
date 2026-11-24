@@ -4,6 +4,7 @@ import { Membership } from "../models/Membership.js";
 import { verifyAccessToken } from "../token.js";
 import { principalFromActiveMembership } from "../current-principal.js";
 
+// Verify the bearer token, then reload active tenant membership so revoked access takes effect immediately.
 export async function authenticate(
   request: Request,
   response: Response,
