@@ -10,6 +10,7 @@ function isDuplicateKeyError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 }
 
+// Idempotent ingestion distinguishes safe retries from reuse of the same key with different event data.
 export class EventIngestionService {
   static async ingest(
     organizationId: string,
